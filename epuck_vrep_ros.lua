@@ -42,6 +42,33 @@ getLightSensors=function()
     return lightSens
 end
 
+rosGetCameraData=function()
+    local data,w,h=simGetVisionSensorCharImage(handleCamera)
+    d={}
+    d['header']={seq=0,stamp=simExtRosInterface_getTime(), frame_id="a"}
+    d['height']=h
+    d['width']=w
+    d['encoding']='rgb8'
+    d['is_bigendian']=1
+    d['step']=w*3
+    d['data']=data
+    return d
+end
+
+rosGetProximityData=function(proxData)
+    d={{}, {}, {}, {}, {}, {}, {}, {}}
+
+    for i=1,8,1 do
+        d[i]['header']={seq=0,stamp=simExtRosInterface_getTime(), frame_id="base_prox" .. (i-1)}
+        d[i]['radiation_type']=1 --infrared
+        d[i]['field_of_view']=0.52359878 -- 30 deg
+        d[i]['min_range']=0.0015
+        d[i]['max_range']=0.04
+        d[i]['range']= proxData[i]
+    end
+    return d
+end
+
 threadFunction=function()
     while simGetSimulationState()~=sim_simulation_advancing_abouttostop do
         st=simGetSimulationTime()
@@ -56,49 +83,6 @@ threadFunction=function()
             res,dist=simReadProximitySensor(proxSens[i])
             if (res>0) and (dist<noDetectionDistance) then
                 proxSensDist[i]=dist
-            end
-        end
-        if (opMode==0) then -- We wanna follow the line
-            if (math.mod(st,2)>1.5) then
-                intensity=1
-            else
-                intensity=0
-            end
-            for i=1,9,1 do
-                ledColors[i]={intensity,0,0} -- red
-            end
-            -- Now make sure the light sensors have been read, we have a line and the 4 front prox. sensors didn't detect anything:
-            if lightSens and ((lightSens[1]<0.5)or(lightSens[2]<0.5)or(lightSens[3]<0.5)) and (proxSensDist[2]+proxSensDist[3]+proxSensDist[4]+proxSensDist[5]==noDetectionDistance*4) then
-                if (lightSens[1]>0.5) then 
-                    velLeft=maxVel
-                else
-                    velLeft=maxVel*0.25
-                end
-                if (lightSens[3]>0.5) then 
-                    velRight=maxVel
-                else
-                    velRight=maxVel*0.25
-                end
-            else
-                velRight=maxVel
-                velLeft=maxVel
-                if (proxSensDist[2]+proxSensDist[3]+proxSensDist[4]+proxSensDist[5]==noDetectionDistance*4) then
-                    -- Nothing in front. Maybe we have an obstacle on the side, in which case we wanna keep a constant distance with it:
-                    if (proxSensDist[1]>0.25*noDetectionDistance) then
-                        velLeft=velLeft+maxVel*braitSideSens_leftMotor[1]*(1-(proxSensDist[1]/noDetectionDistance))
-                        velRight=velRight+maxVel*braitSideSens_leftMotor[2]*(1-(proxSensDist[1]/noDetectionDistance))
-                    end
-                    if (proxSensDist[6]>0.25*noDetectionDistance) then
-                        velLeft=velLeft+maxVel*braitSideSens_leftMotor[2]*(1-(proxSensDist[6]/noDetectionDistance))
-                        velRight=velRight+maxVel*braitSideSens_leftMotor[1]*(1-(proxSensDist[6]/noDetectionDistance))
-                    end
-                else
-                    -- Obstacle in front. Use Braitenberg to avoid it
-                    for i=1,4,1 do
-                        velLeft=velLeft+maxVel*braitFrontSens_leftMotor[i]*(1-(proxSensDist[1+i]/noDetectionDistance))
-                        velRight=velRight+maxVel*braitFrontSens_leftMotor[5-i]*(1-(proxSensDist[1+i]/noDetectionDistance))
-                    end
-                end
             end
         end
         if (opMode==1) then -- We wanna follow something!
@@ -132,6 +116,18 @@ threadFunction=function()
             velLeft=velLeftFollow*t+velLeftAvoid*(1-t)
             velRight=velRightFollow*t+velRightAvoid*(1-t)
         end
+
+        if (opMode==2) then -- ROS interface
+            -- publish camera
+            simExtRosInterface_publish(pubCamera,rosGetCameraData())
+
+            -- publish proximity
+            proximityData = rosGetProximityData(proxSensDist)
+            for i=1,8,1 do
+                simExtRosInterface_publish(pubProx[i], proximityData[i])
+            end
+        end
+
         simSetJointTargetVelocity(leftMotor,velLeft)
         simSetJointTargetVelocity(rightMotor,velRight)
         actualizeLEDs()
@@ -154,15 +150,39 @@ end
 maxVel=120*math.pi/180
 ledColors={{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0}}
 
--- Braitenberg weights for the 4 front prox sensors (avoidance):
-braitFrontSens_leftMotor={1,2,-2,-1}
--- Braitenberg weights for the 2 side prox sensors (following):
-braitSideSens_leftMotor={-1,0}
--- Braitenberg weights for the 8 sensors (following):
-braitAllSensFollow_leftMotor={-3,-1.5,-0.5,0.8,1,0,0,-4}
-braitAllSensFollow_rightMotor={0,1,0.8,-0.5,-1.5,-3,-4,0}
-braitAllSensAvoid_leftMotor={0,0.5,1,-1,-0.5,-0.5,0,0}
-braitAllSensAvoid_rightMotor={-0.5,-0.5,-1,1,0.5,0,0,0}
+-- ROS interface initialization
+ePuckName = simGetObjectName(ePuck)
+simAddStatusbarMessage('epuck '.. ePuckName ..' initializing')
+-- Check if the required RosInterface is there:
+-- http://www.coppeliarobotics.com/helpFiles/en/rosTutorialIndigo.htm
+moduleName=0
+index=0
+rosInterfacePresent=false
+while moduleName do
+    moduleName=simGetModuleName(index)
+    if (moduleName=='RosInterface') then
+        rosInterfacePresent=true
+    end
+    index=index+1
+end
+
+--setup handles for various components
+handleCamera=simGetObjectHandle('ePuck_camera')
+
+--create publishers (proximity, imu, camera, ground_truth)
+--sensorPub=simExtRosInterface_advertise('/'..sensorTopicName,'std_msgs/Bool')
+pubCamera = simExtRosInterface_advertise('/' .. ePuckName ..'/camera', 'sensor_msgs/Image')
+simExtRosInterface_publisherTreatUInt8ArrayAsString(pubCamera) -- treat uint8 arrays as strings (much faster, tables/arrays are kind of slow in Lua)
+pubProx = {}
+pubProx[1] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity1', 'sensor_msgs/Range')
+pubProx[2] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity2', 'sensor_msgs/Range')
+pubProx[3] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity3', 'sensor_msgs/Range')
+pubProx[4] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity4', 'sensor_msgs/Range')
+pubProx[5] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity5', 'sensor_msgs/Range')
+pubProx[6] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity6', 'sensor_msgs/Range')
+pubProx[7] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity7', 'sensor_msgs/Range')
+pubProx[8] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity8', 'sensor_msgs/Range')
+
 
 -- Here we execute the regular thread code:
 res,err=xpcall(threadFunction,function(err) return debug.traceback(err) end)
