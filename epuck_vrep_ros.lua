@@ -69,6 +69,16 @@ rosGetProximityData=function(proxData)
     return d
 end
 
+rosCallbackCmdLed=function(msg)
+    for i=1,9,1 do
+        if (msg.data[i] == 1) then
+            ledColors[i] = {1, 0, 0} --red
+        else
+            ledColors[i] = {0, 0, 0} --off
+        end
+    end
+end
+
 threadFunction=function()
     while simGetSimulationState()~=sim_simulation_advancing_abouttostop do
         st=simGetSimulationTime()
@@ -170,9 +180,9 @@ end
 handleCamera=simGetObjectHandle('ePuck_camera')
 
 --create publishers (proximity, imu, camera, ground_truth)
---sensorPub=simExtRosInterface_advertise('/'..sensorTopicName,'std_msgs/Bool')
 pubCamera = simExtRosInterface_advertise('/' .. ePuckName ..'/camera', 'sensor_msgs/Image')
 simExtRosInterface_publisherTreatUInt8ArrayAsString(pubCamera) -- treat uint8 arrays as strings (much faster, tables/arrays are kind of slow in Lua)
+
 pubProx = {}
 pubProx[1] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity1', 'sensor_msgs/Range')
 pubProx[2] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity2', 'sensor_msgs/Range')
@@ -183,6 +193,8 @@ pubProx[6] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity6', 'se
 pubProx[7] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity7', 'sensor_msgs/Range')
 pubProx[8] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity8', 'sensor_msgs/Range')
 
+--create subscribers (leds, movement)
+subLED=simExtRosInterface_subscribe('/' .. ePuckName .. '/cmd_led','std_msgs/UInt8MultiArray','rosCallbackCmdLed')
 
 -- Here we execute the regular thread code:
 res,err=xpcall(threadFunction,function(err) return debug.traceback(err) end)
