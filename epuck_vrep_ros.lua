@@ -97,6 +97,27 @@ rosCallbackCmdVel=function(msg)
     simAddStatusbarMessage('epuck '.. ePuckName ..' newVel '.. velLeft .. ' ' .. velRight)
 end
 
+-- function for tf transform message generation
+-- adapted from http://www.forum.coppeliarobotics.com/viewtopic.php?f=5&t=6198#p24920
+--getTransformStamped=function(objHandle,name,relTo,relToName)
+rosGetTransformStamped=function(childHandle, referenceHandle, childName, referenceName)
+    t=simGetSystemTime()
+    p=simGetObjectPosition(childHandle,referenceHandle)
+    o=simGetObjectQuaternion(childHandle,referenceHandle)
+    return {
+        header={
+            stamp=t,
+            frame_id=referenceName
+        },
+        child_frame_id=childName,
+        transform={
+            -- ROS has definition x=front y=side z=up
+            translation={x=p[1],y=p[2],z=p[3]},--V-rep
+            rotation={x=o[1],y=o[2],z=o[3],w=o[4]}--v-rep
+        }
+    }
+end
+
 threadFunction=function()
     while simGetSimulationState()~=sim_simulation_advancing_abouttostop do
         st=simGetSimulationTime()
@@ -153,6 +174,16 @@ threadFunction=function()
             for i=1,8,1 do
                 simExtRosInterface_publish(pubProx[i], proximityData[i])
             end
+
+            -- publish TF
+            tf={}
+            tf[1] = rosGetTransformStamped(ePuckBase, -1, ePuckName .. "/base_link", "odom")
+            for i=1,8,1 do
+                tf[i+1] = rosGetTransformStamped(proxSens[i], ePuckBase, ePuckName .. "/base_prox" .. (i-1), ePuckName .. "/base_link")
+            end
+            tf[10] = rosGetTransformStamped(leftMotor, ePuckBase, ePuckName .. "/left_wheel", ePuckName .. "/base_link")
+            tf[11] = rosGetTransformStamped(rightMotor, ePuckBase, ePuckName .. "/right_wheel", ePuckName .. "/base_link")
+            simExtRosInterface_sendTransforms(tf)
         end
 
         simSetJointTargetVelocity(leftMotor,velLeft)
