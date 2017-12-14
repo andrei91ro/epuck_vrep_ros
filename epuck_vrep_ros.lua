@@ -1,5 +1,8 @@
 -- This is the Epuck principal control script. It is threaded
 
+velLeft=0
+velRight=0
+
 actualizeLEDs=function()
     if (relLedPositions==nil) then
         relLedPositions={{-0.0343,0,0.0394},{-0.0297,0.0171,0.0394},{0,0.0343,0.0394},
@@ -79,11 +82,25 @@ rosCallbackCmdLed=function(msg)
     end
 end
 
+rosCallbackCmdVel=function(msg)
+    -- constants, taken from e-puck ROS driver (epuck_driver_cpp)
+    WHEEL_DIAMETER=40 * s        -- mm.
+    WHEEL_SEPARATION=53 * s    -- Separation between wheels (mm).
+
+    linear=msg.linear.x
+    angular=msg.angular.z
+
+    -- determine velocity in e-puck firmware scale (-1000; 1000)
+    velLeft = (linear - (WHEEL_SEPARATION / 2.0) * angular) / WHEEL_DIAMETER;
+    velRight = (linear + (WHEEL_SEPARATION / 2.0) * angular) / WHEEL_DIAMETER;
+
+    simAddStatusbarMessage('epuck '.. ePuckName ..' newVel '.. velLeft .. ' ' .. velRight)
+end
+
 threadFunction=function()
     while simGetSimulationState()~=sim_simulation_advancing_abouttostop do
         st=simGetSimulationTime()
-        velLeft=0
-        velRight=0
+
         opMode=simGetScriptSimulationParameter(sim_handle_self,'opMode')
         lightSens=getLightSensors()
         s=simGetObjectSizeFactor(bodyElements) -- make sure that if we scale the robot during simulation, other values are scaled too!
@@ -195,6 +212,7 @@ pubProx[8] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity8', 'se
 
 --create subscribers (leds, movement)
 subLED=simExtRosInterface_subscribe('/' .. ePuckName .. '/cmd_led','std_msgs/UInt8MultiArray','rosCallbackCmdLed')
+subVel=simExtRosInterface_subscribe('/' .. ePuckName .. '/cmd_vel','geometry_msgs/Twist','rosCallbackCmdVel')
 
 -- Here we execute the regular thread code:
 res,err=xpcall(threadFunction,function(err) return debug.traceback(err) end)
