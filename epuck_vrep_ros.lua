@@ -72,6 +72,34 @@ rosGetProximityData=function(proxData)
     return d
 end
 
+rosGetImuData=function()
+    msg = {}
+
+    accelData=simTubeRead(accelCommunicationTube)
+    if (accelData) then
+        acceleration=simUnpackFloatTable(accelData)
+        msg['header'] = {seq=0,stamp=simExtRosInterface_getTime(), frame_id = ePuckName .. "/base_link"}
+        msg['linear_acceleration'] = {}
+        msg['linear_acceleration']['x'] = acceleration[1]
+        msg['linear_acceleration']['y'] = acceleration[2]
+        msg['linear_acceleration']['z'] = acceleration[3]
+        msg['linear_acceleration_covariance'] = {0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01}
+end
+
+    gyroData=simTubeRead(gyroCommunicationTube)
+    if (gyroData) then
+        angularVariations=simUnpackFloatTable(gyroData)
+        msg['header'] = {seq=0,stamp=simExtRosInterface_getTime(), frame_id = ePuckName .. "/base_link"}
+        msg['angular_velocity'] = {}
+        msg['angular_velocity']['x'] = angularVariations[1]
+        msg['angular_velocity']['y'] = angularVariations[2]
+        msg['angular_velocity']['z'] = angularVariations[3]
+        msg['angular_velocity_covariance'] = {0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01}
+    end
+
+    return msg
+end
+
 rosCallbackCmdLed=function(msg)
     for i=1,9,1 do
         if (msg.data[i] == 1) then
@@ -184,6 +212,9 @@ threadFunction=function()
             tf[10] = rosGetTransformStamped(leftMotor, ePuckBase, ePuckName .. "/left_wheel", ePuckName .. "/base_link")
             tf[11] = rosGetTransformStamped(rightMotor, ePuckBase, ePuckName .. "/right_wheel", ePuckName .. "/base_link")
             simExtRosInterface_sendTransforms(tf)
+
+            -- publish IMU
+            simExtRosInterface_publish(pubIMU, rosGetImuData())
         end
 
         simSetJointTargetVelocity(leftMotor,velLeft)
@@ -209,7 +240,13 @@ maxVel=120*math.pi/180
 ledColors={{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0}}
 
 -- ROS interface initialization
-ePuckName = simGetObjectName(ePuck)
+ePuckNumber = simGetNameSuffix(simGetScriptName(sim_handle_self))
+if (ePuckNumber == -1) then
+    ePuckNumber = 0
+else
+    ePuckNumber = ePuckNumber + 1
+end
+ePuckName = 'ePuck' .. ePuckNumber
 simAddStatusbarMessage('epuck '.. ePuckName ..' initializing')
 -- Check if the required RosInterface is there:
 -- http://www.coppeliarobotics.com/helpFiles/en/rosTutorialIndigo.htm
@@ -223,6 +260,11 @@ while moduleName do
     end
     index=index+1
 end
+
+-- Accelerometer tube open
+accelCommunicationTube=simTubeOpen(0,'accelerometerData'..simGetNameSuffix(nil),1) -- put this in the initialization phase
+-- Gyroscope tube open
+gyroCommunicationTube=simTubeOpen(0,'gyroData'..simGetNameSuffix(nil),1)
 
 --setup handles for various components
 handleCamera=simGetObjectHandle('ePuck_camera')
@@ -240,6 +282,8 @@ pubProx[5] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity5', 'se
 pubProx[6] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity6', 'sensor_msgs/Range')
 pubProx[7] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity7', 'sensor_msgs/Range')
 pubProx[8] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity8', 'sensor_msgs/Range')
+
+pubIMU = simExtRosInterface_advertise('/' .. ePuckName ..'/imu', 'sensor_msgs/Imu')
 
 --create subscribers (leds, movement)
 subLED=simExtRosInterface_subscribe('/' .. ePuckName .. '/cmd_led','std_msgs/UInt8MultiArray','rosCallbackCmdLed')
