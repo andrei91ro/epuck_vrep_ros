@@ -10,3 +10,17 @@ This repository includes:
     * `e-puck.ttm`: an epuck model that can be directly loaded in a V-REP scene, using `File -> Load model`
 
 Before starting any simulation, make sure that the `opMode` parameter of the e-puck is to `2` as the first two values (`0` and `1`) are reserved for the original line-follower and leader-follow behaviours that came with the e-puck model. See the [V-REP user interface documentation](http://www.coppeliarobotics.com/helpFiles/en/userInterface.htm) for information on modifying parameters.
+
+# License notice
+
+The MIT license applies specifically to the ROS extensions introduced in this repository.
+The rest of the code is licensed under the [e-puck](http://www.e-puck.org/) license.
+
+# Authors
+Andrei George Florea, [Cătălin Buiu](http://catalin.buiu.net)
+
+[Department of Automatic Control And Systems Engineering](http://acse.pub.ro),
+
+Politehnica University of Bucharest
+
+Bucharest, Romania.
