@@ -62,7 +62,7 @@ rosGetProximityData=function(proxData)
     d={{}, {}, {}, {}, {}, {}, {}, {}}
 
     for i=1,8,1 do
-        d[i]['header']={seq=0,stamp=simExtRosInterface_getTime(), frame_id="base_prox" .. (i-1)}
+        d[i]['header']={seq=0,stamp=simExtRosInterface_getTime(), frame_id = ePuckName .. "/base_prox" .. (i-1)}
         d[i]['radiation_type']=1 --infrared
         d[i]['field_of_view']=0.52359878 -- 30 deg
         d[i]['min_range']=0.0015
@@ -129,7 +129,7 @@ end
 -- adapted from http://www.forum.coppeliarobotics.com/viewtopic.php?f=5&t=6198#p24920
 --getTransformStamped=function(objHandle,name,relTo,relToName)
 rosGetTransformStamped=function(childHandle, referenceHandle, childName, referenceName)
-    t=simGetSystemTime()
+    t=simExtRosInterface_getTime()
     p=simGetObjectPosition(childHandle,referenceHandle)
     o=simGetObjectQuaternion(childHandle,referenceHandle)
     return {
@@ -252,8 +252,9 @@ threadFunction=function()
             for i=1,8,1 do
                 tf[i+1] = rosGetTransformStamped(proxSens[i], ePuckBase, ePuckName .. "/base_prox" .. (i-1), ePuckName .. "/base_link")
             end
-            tf[10] = rosGetTransformStamped(leftMotor, ePuckBase, ePuckName .. "/left_wheel", ePuckName .. "/base_link")
-            tf[11] = rosGetTransformStamped(rightMotor, ePuckBase, ePuckName .. "/right_wheel", ePuckName .. "/base_link")
+            tf[10] = rosGetTransformStamped(leftWheel, ePuckBase, ePuckName .. "/left_wheel", ePuckName .. "/base_link")
+            tf[11] = rosGetTransformStamped(rightWheel, ePuckBase, ePuckName .. "/right_wheel", ePuckName .. "/base_link")
+            tf[12] = rosGetTransformStamped(ePuckBodyTop, ePuckBase, ePuckName .. "/body_top", ePuckName .. "/base_link")
             simExtRosInterface_sendTransforms(tf)
 
             -- publish IMU
@@ -272,8 +273,11 @@ simSetThreadSwitchTiming(200) -- We will manually switch in the main loop
 bodyElements=simGetObjectHandle('ePuck_bodyElements')
 leftMotor=simGetObjectHandle('ePuck_leftJoint')
 rightMotor=simGetObjectHandle('ePuck_rightJoint')
+leftWheel=simGetObjectHandle('ePuck_leftWheel')
+rightWheel=simGetObjectHandle('ePuck_rightWheel')
 ePuck=simGetObjectHandle('ePuck')
 ePuckBase=simGetObjectHandle('ePuck_base')
+ePuckBodyTop=simGetObjectHandle('ePuck_ring')
 ledLight=simGetObjectHandle('ePuck_ledLight')
 proxSens={-1,-1,-1,-1,-1,-1,-1,-1}
 for i=1,8,1 do
