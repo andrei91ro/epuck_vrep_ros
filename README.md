@@ -6,7 +6,7 @@ The ROS topics are the same as those used by the [epuck\_driver\_cpp](https://gi
 
 Input from robot:
 
-* `proximity1` to `proximity8`
+* `proximity0` to `proximity7`
 * `camera`
 * `imu`
 * `tf`
