@@ -66,7 +66,7 @@ rosGetProximityData=function(proxData)
         d[i]['radiation_type']=1 --infrared
         d[i]['field_of_view']=0.52359878 -- 30 deg
         d[i]['min_range']=0.0015
-        d[i]['max_range']=0.04
+        d[i]['max_range']=noDetectionDistance
         d[i]['range']= proxData[i]
     end
     return d
@@ -250,7 +250,7 @@ threadFunction=function()
             tf={}
             tf[1] = rosGetTransformStamped(ePuckBase, -1, ePuckName .. "/base_link", "odom")
             for i=1,8,1 do
-                tf[i+1] = rosGetTransformStamped(proxSens[i], ePuckBase, ePuckName .. "/base_prox" .. (i-1), ePuckName .. "/base_link")
+                tf[i+1] = rosGetTransformStamped(dummyProxSens[i], ePuckBase, ePuckName .. "/base_prox" .. (i-1), ePuckName .. "/base_link")
             end
             tf[10] = rosGetTransformStamped(leftWheel, ePuckBase, ePuckName .. "/left_wheel", ePuckName .. "/base_link")
             tf[11] = rosGetTransformStamped(rightWheel, ePuckBase, ePuckName .. "/right_wheel", ePuckName .. "/base_link")
@@ -280,8 +280,10 @@ ePuckBase=simGetObjectHandle('ePuck_base')
 ePuckBodyTop=simGetObjectHandle('ePuck_ring')
 ledLight=simGetObjectHandle('ePuck_ledLight')
 proxSens={-1,-1,-1,-1,-1,-1,-1,-1}
+dummyProxSens={-1,-1,-1,-1,-1,-1,-1,-1}
 for i=1,8,1 do
     proxSens[i]=simGetObjectHandle('ePuck_proxSensor'..i)
+    dummyProxSens[i]=simGetObjectHandle('dummy_proxSensor'..i)
 end
 maxVel=120*math.pi/180
 ledColors={{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0}}
@@ -331,15 +333,9 @@ pubCamera = simExtRosInterface_advertise('/' .. ePuckName ..'/camera', 'sensor_m
 simExtRosInterface_publisherTreatUInt8ArrayAsString(pubCamera) -- treat uint8 arrays as strings (much faster, tables/arrays are kind of slow in Lua)
 
 pubProx = {}
-pubProx[1] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity1', 'sensor_msgs/Range')
-pubProx[2] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity2', 'sensor_msgs/Range')
-pubProx[3] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity3', 'sensor_msgs/Range')
-pubProx[4] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity4', 'sensor_msgs/Range')
-pubProx[5] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity5', 'sensor_msgs/Range')
-pubProx[6] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity6', 'sensor_msgs/Range')
-pubProx[7] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity7', 'sensor_msgs/Range')
-pubProx[8] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity8', 'sensor_msgs/Range')
-
+for i=1,8,1 do
+    pubProx[i] = simExtRosInterface_advertise('/' .. ePuckName .. '/proximity'..(i-1), 'sensor_msgs/Range')
+end
 pubIMU = simExtRosInterface_advertise('/' .. ePuckName ..'/imu', 'sensor_msgs/Imu')
 
 --create subscribers (leds, movement)
