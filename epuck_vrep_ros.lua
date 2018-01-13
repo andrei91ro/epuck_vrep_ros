@@ -115,7 +115,7 @@ rosCallbackCmdVel=function(msg)
     WHEEL_DIAMETER=40 * s        -- mm.
     WHEEL_SEPARATION=53 * s    -- Separation between wheels (mm).
 
-    linear=msg.linear.x
+    linear=msg.linear.x * 8.9
     angular=msg.angular.z
 
     -- determine velocity in e-puck firmware scale (-1000; 1000)
@@ -282,8 +282,8 @@ ledLight=simGetObjectHandle('ePuck_ledLight')
 proxSens={-1,-1,-1,-1,-1,-1,-1,-1}
 dummyProxSens={-1,-1,-1,-1,-1,-1,-1,-1}
 for i=1,8,1 do
-    proxSens[i]=simGetObjectHandle('ePuck_proxSensor'..i)
-    dummyProxSens[i]=simGetObjectHandle('dummy_proxSensor'..i)
+    proxSens[i]=simGetObjectHandle('ePuck_proxSensor'..(i-1))
+    dummyProxSens[i]=simGetObjectHandle('dummy_proxSensor'..(i-1))
 end
 maxVel=120*math.pi/180
 ledColors={{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0}}
