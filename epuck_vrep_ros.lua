@@ -3,6 +3,11 @@
 velLeft=0
 velRight=0
 
+paramIsNoise=false
+paramNoiseProb=0.16
+paramNoiseMean=0
+paramNoiseSD=1
+
 actualizeLEDs=function()
     if (relLedPositions==nil) then
         relLedPositions={{-0.0343,0,0.0394},{-0.0297,0.0171,0.0394},{0,0.0343,0.0394},
@@ -58,6 +63,21 @@ rosGetCameraData=function()
     return d
 end
 
+randomNormal=function()  -- normal distribution, centered on mean 0, std dev 1
+  --return sqrt(-2*log(drand())) * cos(2*M_PI*drand());
+  return math.sqrt(-2 * math.log(math.random())) * math.cos(2 * math.pi * math.random())
+end
+
+clampValue=function(value, min, max)
+    if (value <= min) then
+        return min
+    elseif (value >= max) then
+        return max
+    end
+    
+    return value
+end
+
 rosGetProximityData=function(proxData)
     d={{}, {}, {}, {}, {}, {}, {}, {}}
 
@@ -67,7 +87,31 @@ rosGetProximityData=function(proxData)
         d[i]['field_of_view']=0.52359878 -- 30 deg
         d[i]['min_range']=0.0015
         d[i]['max_range']=noDetectionDistance
-        d[i]['range']= proxData[i]
+        if (paramIsNoise and paramNoiseProb > 0) then
+            -- test probability of noise
+            if (math.random() <= paramNoiseProb) then
+                noise = paramNoiseMean + paramNoiseSD * randomNormal() -- noise generation
+
+                if (proxData[i] == d[i]['min_range']) then
+                    d[i]['range'] = proxData[i] + noise -- WITH noise
+                elseif (proxData[i] == d[i]['max_range']) then
+                    d[i]['range'] = proxData[i] - noise -- WITH noise
+                else 
+                    if (math.random() < 0.5) then
+                        d[i]['range'] = proxData[i] - noise -- WITH noise
+                    else
+                        d[i]['range'] = proxData[i] + noise -- WITH noise
+                    end
+                end
+                -- make sure that the value does not exceed minimum/maximum values
+                d[i]['range'] = clampValue(d[i]['range'], d[i]['min_range'], d[i]['max_range'])
+
+            else
+                d[i]['range'] = proxData[i] -- no noise
+            end
+        else
+            d[i]['range'] = proxData[i] -- no noise
+        end
     end
     return d
 end
@@ -269,6 +313,22 @@ threadFunction=function()
 end
 
 -- Put some initialization code here:
+
+-- Get proximity noise parameters
+-- If not set, use default values, specified at the beginning of this file
+if (simGetScriptSimulationParameter(sim_handle_self,'isNoise') ~= nil) then
+    paramIsNoise=simGetScriptSimulationParameter(sim_handle_self,'isNoise')
+end
+if (simGetScriptSimulationParameter(sim_handle_self,'NoiseProb') ~= nil) then
+    paramNoiseProb=simGetScriptSimulationParameter(sim_handle_self,'NoiseProb')
+end
+if (simGetScriptSimulationParameter(sim_handle_self,'NoiseMean') ~= nil) then
+    paramNoiseMean=simGetScriptSimulationParameter(sim_handle_self,'NoiseMean')
+end
+if (simGetScriptSimulationParameter(sim_handle_self,'NoiseSD') ~= nil) then
+    paramNoiseSD=simGetScriptSimulationParameter(sim_handle_self,'NoiseSD')
+end
+
 simSetThreadSwitchTiming(200) -- We will manually switch in the main loop
 bodyElements=simGetObjectHandle('ePuck_bodyElements')
 leftMotor=simGetObjectHandle('ePuck_leftJoint')
