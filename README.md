@@ -41,6 +41,29 @@ Once downloaded, the steps required to simulate an e-puck in V-REP and control i
 The MIT license applies specifically to the ROS extensions introduced in this repository.
 The rest of the code is licensed under the [e-puck](http://www.e-puck.org/) license.
 
+If this extension was useful in your academic work, please cite the following paper:
+
+[1] A. G. Florea, “Integrating a V-Rep Simulated Mobile Robot into Ros,” Univ. Politeh. Buchar. Sci. Bull. Ser. C-Electr. Eng. Comput. Sci., vol. 80, no. 3, pp. 3–16, 2018.
+
+```bibtex
+@article{ ISI:000440896700001,
+    Author = {Florea, Andrei George},
+    Title = {{INTEGRATING A V-REP SIMULATED MOBILE ROBOT INTO ROS}},
+    Journal = {{UNIVERSITY POLITEHNICA OF BUCHAREST SCIENTIFIC BULLETIN SERIES
+       C-ELECTRICAL ENGINEERING AND COMPUTER SCIENCE}},
+    Year = {{2018}},
+    Volume = {{80}},
+    Number = {{3}},
+    Pages = {{3-16}},
+    Publisher = {{POLYTECHNIC UNIV BUCHAREST}},
+    Address = {{SPLAIUL INDEPENDENTEI 313, SECTOR 6, BUCH, 060042, ROMANIA}},
+    Type = {{Article}},
+    Language = {{English}},
+    ISSN = {{2286-3540}},
+    Keywords = {{simulation; V-REP; ROS; e-puck}},
+}
+```
+
 # Authors
 Andrei George Florea, [Cătălin Buiu](http://catalin.buiu.net)
 
