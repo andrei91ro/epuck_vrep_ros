@@ -56,7 +56,7 @@ The rest of the code is licensed under the [e-puck](http://www.e-puck.org/) lice
 
 If this extension was useful in your academic work, please cite the following paper:
 
-A. G. Florea, “Integrating a V-Rep Simulated Mobile Robot into Ros,” Univ. Politeh. Buchar. Sci. Bull. Ser. C-Electr. Eng. Comput. Sci., vol. 80, no. 3, pp. 3–16, 2018.
+[A. G. Florea, “Integrating a V-Rep Simulated Mobile Robot into Ros,” Univ. Politeh. Buchar. Sci. Bull. Ser. C-Electr. Eng. Comput. Sci., vol. 80, no. 3, pp. 3–16, 2018](https://www.scientificbulletin.upb.ro/rev_docs_arhiva/rez72b_106350.pdf)
 
 ```bibtex
 @article{ ISI:000440896700001,
