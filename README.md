@@ -26,7 +26,20 @@ This repository includes:
 
 Before starting any simulation, make sure that the `opMode` parameter of the e-puck is to `2` as the first two values (`0` and `1`) are reserved for the original line-follower and leader-follow behaviours that came with the e-puck model. See the [V-REP user interface documentation](http://www.coppeliarobotics.com/helpFiles/en/userInterface.htm) for information on modifying parameters.
 
+## Detailed description
+
+A detailed description of this package and the noise model that was applied in order to simulate infrared sensor noise is avaialble in the following paper:
+
+[A. G. Florea, “Integrating a V-Rep Simulated Mobile Robot into Ros,” Univ. Politeh. Buchar. Sci. Bull. Ser. C-Electr. Eng. Comput. Sci., vol. 80, no. 3, pp. 3–16, 2018](https://www.scientificbulletin.upb.ro/rev_docs_arhiva/rez72b_106350.pdf)
+
+
+## Usage
+
+Assuming you have a working ROS and VREP configuration, complete with the `epuck_driver_cpp`, using this extension is simply a matter of drag-and-dropping `e-puck.ttm` into your V-REP scene.
+
 ## Easy start - Docker
+
+The following is usefull only to users that do not have a working ROS, VREP configuration.
 
 In order to simplify the installation procedure, users of Docker can use a [specially built container](https://hub.docker.com/r/naturo/epuck_vrep_ros/) that has ROS, V-REP and this extension pre-installed.
 
@@ -43,7 +56,7 @@ The rest of the code is licensed under the [e-puck](http://www.e-puck.org/) lice
 
 If this extension was useful in your academic work, please cite the following paper:
 
-[1] A. G. Florea, “Integrating a V-Rep Simulated Mobile Robot into Ros,” Univ. Politeh. Buchar. Sci. Bull. Ser. C-Electr. Eng. Comput. Sci., vol. 80, no. 3, pp. 3–16, 2018.
+A. G. Florea, “Integrating a V-Rep Simulated Mobile Robot into Ros,” Univ. Politeh. Buchar. Sci. Bull. Ser. C-Electr. Eng. Comput. Sci., vol. 80, no. 3, pp. 3–16, 2018.
 
 ```bibtex
 @article{ ISI:000440896700001,
